@@ -1,0 +1,60 @@
+{
+  "name": "@henotace/ai-sdk",
+  "version": "1.0.0",
+  "description": "Official Node.js SDK for Henotace AI API - AI-powered educational platform",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "prepublishOnly": "npm run build && npm run test",
+    "generate-client": "openapi-generator-cli generate -i swagger.json -g typescript-axios -o src/generated --additional-properties=typescriptThreePlus=true,withNodeImports=true"
+  },
+  "keywords": [
+    "henotace",
+    "ai",
+    "education",
+    "tutoring",
+    "api",
+    "sdk",
+    "typescript",
+    "nodejs"
+  ],
+  "author": "Henotace Team <api.henotace.ng>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/henotace/henotace-nodejs-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/henotace/henotace-nodejs-sdk/issues"
+  },
+  "homepage": "https://henotaceai.ng",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "dependencies": {
+    "axios": "^1.6.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.0.0",
+    "@openapitools/openapi-generator-cli": "^2.7.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
