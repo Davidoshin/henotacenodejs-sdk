@@ -47,14 +47,21 @@ export class HenotaceAI {
   }
 
   private handleError(error: any): never {
-    if (error.response?.status === 401) {
+    // Robust network error detection across different error shapes
+    const errMessage = String(error?.message || error || '');
+    const respDataString = error?.response && error.response.data ? JSON.stringify(error.response.data) : '';
+    if (error?.code === 'NETWORK_ERROR' || errMessage.includes('Network Error') || respDataString.includes('Network Error')) {
+      const msg = error?.message || 'Network Error';
+      throw new Error(`Network Error: ${msg}`);
+    }
+
+    // Now handle HTTP response status codes (only when a response is present)
+    if (error.response && error.response.status === 401) {
       throw new Error('Invalid API key. Please check your credentials.');
-    } else if (error.response?.status === 429) {
+    } else if (error.response && error.response.status === 429) {
       throw new Error('Rate limit exceeded. Please try again later.');
-    } else if (error.response?.status === 500) {
+    } else if (error.response && error.response.status === 500) {
       throw new Error('Internal server error. Please try again later.');
-    } else if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
-      throw new Error(`Network Error: ${error.message}`);
     } else {
       throw new Error(error.message || 'An unexpected error occurred');
     }
@@ -118,6 +125,10 @@ export class HenotaceAI {
       const response = await this.client.get('/api/external/status/');
       return response.data;
     } catch (error: any) {
+      // If this looks like a plain network error, throw a matching message
+      if (error && (String(error.message || '').includes('Network Error') || error.code === 'NETWORK_ERROR')) {
+        throw new Error(`Network Error: ${error.message || 'Network Error'}`);
+      }
       this.handleError(error);
     }
   }

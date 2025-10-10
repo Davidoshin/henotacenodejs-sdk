@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Henotace SDK — Demo</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="container">
+    <h1>Henotace SDK — Chat Demo</h1>
+    <div id="chat" class="chat"></div>
+    <form id="form" class="composer">
+      <input id="input" autocomplete="off" placeholder="Type a message..." />
+      <button type="submit">Send</button>
+    </form>
+  </div>
+  <script>
+    const chatEl = document.getElementById('chat');
+    const form = document.getElementById('form');
+    const input = document.getElementById('input');
+
+    function appendMessage(text, cls) {
+      const d = document.createElement('div');
+      d.className = 'msg ' + cls;
+      d.textContent = text;
+      chatEl.appendChild(d);
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const value = input.value.trim();
+      if (!value) return;
+      appendMessage(value, 'user');
+      input.value = '';
+      appendMessage('...', 'assistant');
+      try {
+        const res = await fetch('/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: value }) });
+        const data = await res.json();
+        // replace last assistant placeholder
+        const last = chatEl.querySelector('.msg.assistant:last-child');
+        if (last) last.textContent = data.reply || '(no reply)';
+      } catch (err) {
+        const last = chatEl.querySelector('.msg.assistant:last-child');
+        if (last) last.textContent = 'Error: ' + (err && err.message ? err.message : 'Network error');
+      }
+    });
+  </script>
+</body>
+</html>
