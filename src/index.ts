@@ -147,12 +147,20 @@ export class HenotaceAI {
 
   // Removed: session creation and session-bound chat are no longer part of the SDK
 
-  // unified chat completion; replaces session-bound chat API usage
-  private async completeChat(payload: { history: { role: 'user' | 'assistant'; content: string }[]; input: string; preset?: string }): Promise<{ ai_response: string }> {
+  // unified chat completion using tutor prompts from views_tutor.py
+  private async completeChat(payload: { history: { role: 'user' | 'assistant'; content: string }[]; input: string; preset?: string; subject?: string; topic?: string }): Promise<{ ai_response: string }> {
     try {
+      // Convert history to the format expected by the tutor prompt endpoint
+      const chatHistory = payload.history.map(msg => ({
+        sender: msg.role === 'user' ? 'student' : 'tutor',
+        message: msg.content
+      }));
+
       const response = await this.client.post('/api/external/working/chat/completion/', {
-        history: payload.history,
+        history: chatHistory,
         input: payload.input,
+        subject: payload.subject || 'general',
+        topic: payload.topic || 'general',
         preset: payload.preset || 'tutor_default'
       });
       const data = response.data;
@@ -203,6 +211,8 @@ export class Tutor {
   private persona: string | null = null;
   private userProfile: Record<string, any> | null = null;
   private metadata: Record<string, any> | null = null;
+  private subject: string = 'general';
+  private topic: string = 'general';
   // Checkpoint compression settings
   private compression: { maxTurns: number; maxSummaryChars: number; checkpointEvery: number } = {
     maxTurns: 12,            // keep last N turns verbatim
@@ -211,10 +221,12 @@ export class Tutor {
   };
   // sessionId removed: chats are storage-managed and backend receives history only
 
-  constructor(sdk: HenotaceAI, studentId: string, tutorId: string) {
+  constructor(sdk: HenotaceAI, studentId: string, tutorId: string, subject?: string, topic?: string) {
     this.sdk = sdk;
     this.studentId = studentId;
     this.tutorId = tutorId;
+    this.subject = subject || 'general';
+    this.topic = topic || 'general';
   }
 
   setContext(context: string | string[]): void {
@@ -363,7 +375,13 @@ export class Tutor {
       history.push({ role: 'assistant', content: headerParts.join('\n') });
     }
 
-    const completion = await (this.sdk as any).completeChat({ history, input: message, preset: opts?.preset || sdkConfig.defaultPreset || 'tutor_default' });
+    const completion = await (this.sdk as any).completeChat({ 
+      history, 
+      input: message, 
+      preset: opts?.preset || sdkConfig.defaultPreset || 'tutor_default',
+      subject: this.subject,
+      topic: this.topic
+    });
     const ai = completion?.ai_response || '';
     if (storage) {
       const now = Date.now();
@@ -400,7 +418,7 @@ export async function createTutor(sdk: HenotaceAI, init: TutorInit): Promise<Tut
   }
 
   // No backend session needed; we rely on storage-managed history + chat/completion
-  const t = new Tutor(sdk, studentId, tutorId);
+  const t = new Tutor(sdk, studentId, tutorId, init.subject?.name, init.subject?.topic);
   // Load any previously saved context from storage
   if ((sdk as any)['storage']) {
     const storage: StorageConnector = (sdk as any)['storage'];

@@ -32,26 +32,48 @@ npm run build
 npm test
 ```
 
-## Demo: simple UI (local)
+## Demo: Interactive Web UI
 
-A minimal demo is included under `examples/simple-ui/`. It serves a small chat page and proxies chat requests to the Henotace unified chat endpoint. The demo uses the `axios` dependency to forward chat messages to the API—it's a lightweight demo helper and not a production server.
+A fully functional web-based demo is included under `examples/simple-ui/`. This demo provides a complete user interface for testing AI-powered tutoring features with real-time chat, session management, and API key configuration.
 
-Environment variables required:
+### Quick Start
 
-- `HENOTACE_API_KEY` — your API key (required).
-- `HENOTACE_BASE_URL` — optional; defaults to `https://api.djtconcept.ng`.
+1. **Get your API key** from [djtconcept.ng/dashboard](https://djtconcept.ng/dashboard)
 
-Start the demo server and open the browser:
+2. **Start the demo:**
+   ```bash
+   cd examples/simple-ui
+   ./start-demo.sh your_api_key_here
+   ```
 
+3. **Open your browser** to [http://localhost:8080](http://localhost:8080)
+
+### Features
+
+- ✨ **Real-time AI Chat** - Interactive conversations with AI tutors
+- 🎯 **Session Management** - Create and manage multiple tutoring sessions  
+- 🔑 **API Key Management** - Secure API key storage and validation
+- 📚 **Multiple Subjects** - Mathematics, Science, English, History, Computer Science, Physics, Chemistry, Biology, and custom subjects
+- 🎓 **Grade Levels** - Elementary, Middle School, High School, College, University
+- 🌙 **Dark/Light Theme** - Toggle between themes
+- 📱 **Responsive Design** - Works on desktop, tablet, and mobile
+- 💾 **Persistent Storage** - Chat history and settings saved locally
+
+### How to Use
+
+1. Click **Settings** (gear icon) and enter your API key
+2. Click **New Chat** to create a tutor session
+3. Fill in tutor details (name, subject, grade level)
+4. Start chatting with your AI tutor!
+
+### Testing
+
+Run the test script to verify everything works:
 ```bash
-HENOTACE_API_KEY=your_api_key_here npm run demo
-# then open http://localhost:8080 in your browser
+./test-demo.sh
 ```
 
-Notes:
-
-- The demo server serves the static UI and exposes a single POST `/chat` endpoint.
-- The UI is intentionally minimal so you can inspect and adapt it for your own applications.
+For detailed documentation, see [examples/simple-ui/README.md](examples/simple-ui/README.md).
 
 ## Using the SDK programmatically
 

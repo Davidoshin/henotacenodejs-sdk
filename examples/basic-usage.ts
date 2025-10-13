@@ -2,93 +2,76 @@
  * Basic usage example for Henotace AI SDK
  */
 
-import { HenotaceAI } from '../src/index';
+import { HenotaceAI, createTutor } from '../src/index';
+import InMemoryConnector from '../src/connectors/inmemory';
 
 async function basicUsageExample() {
-  // Initialize the SDK
+  // Initialize the SDK with storage
   const sdk = new HenotaceAI({
     apiKey: 'your-api-key-here',
-    baseUrl: 'https://api.djtconcept.ng' // or 'http://localhost:8000' for development
+    baseUrl: 'https://api.djtconcept.ng', // or 'http://localhost:8000' for development
+    storage: new InMemoryConnector()
   });
 
   try {
-    // Check API status
-    console.log('Checking API status...');
-    const status = await sdk.getStatus();
-    console.log('API Status:', status);
-
-    // Create a tutoring session
-    console.log('\nCreating tutoring session...');
-    const session = await sdk.createTutoringSession({
-      student_id: 'student_123',
-      subject: 'mathematics',
+    // Create a math tutor for a student
+    console.log('Creating math tutor...');
+    const tutor = await createTutor(sdk, {
+      studentId: 'student_123',
+      tutorId: 'math_tutor_1',
+      tutorName: 'Math Tutor',
+      subject: { 
+        id: 'mathematics', 
+        name: 'Mathematics', 
+        topic: 'algebra' 
+      },
       grade_level: 'grade_10',
-      topic: 'algebra',
       language: 'en'
     });
-    console.log('Session created:', session);
+    console.log('Tutor created:', tutor.ids);
+
+    // Set some context for the tutor
+    tutor.setContext([
+      'We are working on quadratic equations',
+      'The student is in grade 10',
+      'Focus on step-by-step problem solving'
+    ]);
+
+    // Set a persona for the tutor
+    tutor.setPersona('You are a patient and encouraging math tutor who explains concepts clearly and provides step-by-step solutions.');
 
     // Send a chat message
     console.log('\nSending chat message...');
-    const chatResponse = await sdk.sendChatMessage(
-      session.data!.session_id,
-      'Can you help me solve this algebra problem?',
-      'We are working on quadratic equations'
-    );
-    console.log('Chat response:', chatResponse);
+    const response1 = await tutor.send('Can you help me solve this algebra problem: x² + 5x + 6 = 0?');
+    console.log('AI Response:', response1);
 
-    // Submit an assessment
-    console.log('\nSubmitting assessment...');
-    const assessment = await sdk.submitAssessment({
-      student_id: 'student_123',
-      assignment_type: 'quiz',
-      subject: 'mathematics',
-      questions: [
-        {
-          id: 1,
-          question: 'What is 2 + 2?',
-          correct_answer: '4',
-          points: 10
-        }
-      ],
-      answers: [
-        {
-          question_id: 1,
-          submitted_answer: '4'
-        }
-      ]
+    // Continue the conversation
+    console.log('\nContinuing conversation...');
+    const response2 = await tutor.send('I understand the factoring method. Can you show me the quadratic formula approach?');
+    console.log('AI Response:', response2);
+
+    // Get chat history
+    console.log('\nChat history:');
+    const history = await tutor.history();
+    history.forEach((chat, index) => {
+      console.log(`${index + 1}. ${chat.isReply ? 'AI' : 'Student'}: ${chat.message}`);
     });
-    console.log('Assessment result:', assessment);
 
-    // Generate educational content
-    console.log('\nGenerating content...');
-    const content = await sdk.generateContent({
-      content_type: 'lesson_plan',
-      subject: 'mathematics',
-      grade_level: 'grade_10',
-      topic: 'quadratic equations',
-      requirements: 'Include practice problems and assessment questions'
+    // Create another tutor for a different subject
+    console.log('\nCreating science tutor...');
+    const scienceTutor = await createTutor(sdk, {
+      studentId: 'student_123',
+      tutorId: 'science_tutor_1',
+      tutorName: 'Science Tutor',
+      subject: { 
+        id: 'physics', 
+        name: 'Physics', 
+        topic: 'mechanics' 
+      }
     });
-    console.log('Generated content:', content);
 
-    // Get game questions
-    console.log('\nGetting game questions...');
-    const questions = await sdk.getGameQuestions(1);
-    console.log('Game questions:', questions);
-
-    // Submit game answers
-    console.log('\nSubmitting game answers...');
-    const gameResult = await sdk.submitGameAnswers({
-      game_id: 1,
-      student_id: 'student_123',
-      answers: [
-        {
-          question_id: 1,
-          answer: 'Paris'
-        }
-      ]
-    });
-    console.log('Game result:', gameResult);
+    const scienceResponse = await scienceTutor.send('Explain Newton\'s first law of motion');
+    console.log('Science AI Response:', scienceResponse);
 
   } catch (error) {
     console.error('Error:', error);

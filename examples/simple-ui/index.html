@@ -1,51 +1,210 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en" class="light-theme">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Henotace SDK — Demo</title>
-  <link rel="stylesheet" href="/styles.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Henotace AI Tutor - Smart Learning Assistant</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles-new.css">
+  <link rel="icon" type="image/png" href="https://via.placeholder.com/64">
 </head>
-<body>
-  <div class="container">
-    <h1>Henotace SDK — Chat Demo</h1>
-    <div id="chat" class="chat"></div>
-    <form id="form" class="composer">
-      <input id="input" autocomplete="off" placeholder="Type a message..." />
-      <button type="submit">Send</button>
-    </form>
+<body class="light-theme">
+  <div class="app-container">
+    <!-- Mobile Overlay -->
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+    
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo-container">
+          <img src="/uploads/favicon.png" alt="Henotace AI Logo" class="logo">
+          <h1>Henotace AI</h1>
+        </div>
+        <button class="btn btn-new-chat" id="new-chat-btn">
+          <i class="fas fa-plus"></i> New Chat
+        </button>
+      </div>
+
+      <div class="sidebar-sessions" id="sessions-list">
+        <!-- Sessions will be populated here -->
+        <div class="no-sessions" style="text-align: center; padding: 1rem; color: var(--text-secondary);">
+          <i class="fas fa-comments" style="font-size: 2rem; margin-bottom: 0.5rem; opacity: 0.7;"></i>
+          <p style="font-weight: 500; margin-bottom: 0.25rem;">No active sessions</p>
+          <p style="font-size: 0.875rem;">Start a new chat to begin learning</p>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="btn btn-secondary" id="settings-btn" style="width: 100%; justify-content: center; gap: 0.5rem;">
+          <i class="fas fa-cog"></i> Settings
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="chat-header">
+        <button class="menu-toggle btn-icon" id="menu-toggle" aria-label="Toggle menu">
+          <i class="fas fa-bars"></i>
+        </button>
+        <h2 id="current-tutor">New Chat</h2>
+        <div class="header-actions">
+          <button class="btn-icon" id="theme-toggle" title="Toggle theme" aria-label="Toggle theme">
+            <i class="fas fa-moon"></i>
+          </button>
+        </div>
+      </header>
+
+      <div class="chat-container">
+        <div class="welcome-screen" id="welcome-screen">
+          <div class="welcome-content">
+            <img src="/uploads/favicon.png" alt="Henotace AI" class="welcome-logo" style="width: 80px; height: 80px; border-radius: 50%;">
+            <h1>Welcome to Henotace AI Tutor</h1>
+            <p>Your personal AI-powered learning assistant. Start by creating a new chat session or select an existing one.</p>
+            <button class="btn btn-primary" id="start-chat-btn">
+              <i class="fas fa-plus"></i> Start New Chat
+            </button>
+          </div>
+        </div>
+        <div class="chat-messages" id="chat-messages" style="display: none;">
+          <!-- Messages will be added here -->
+        </div>
+        <div class="typing-indicator" id="typing-indicator" style="display: none;">
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        </div>
+        <div class="chat-input-container">
+          <form id="chat-form" class="chat-form">
+            <div class="input-wrapper">
+              <textarea id="message-input" placeholder="Type your message..." rows="1" autocomplete="off" disabled></textarea>
+              <button type="submit" class="btn-send" id="send-btn" disabled>
+                <i class="fas fa-paper-plane"></i>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </main>
   </div>
-  <script>
-    const chatEl = document.getElementById('chat');
-    const form = document.getElementById('form');
-    const input = document.getElementById('input');
 
-    function appendMessage(text, cls) {
-      const d = document.createElement('div');
-      d.className = 'msg ' + cls;
-      d.textContent = text;
-      chatEl.appendChild(d);
-      chatEl.scrollTop = chatEl.scrollHeight;
-    }
+  <!-- Tutor Creation Modal -->
+  <div class="modal" id="tutor-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Create New Tutor</h2>
+        <button class="close-modal" id="close-tutor-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="tutor-form">
+          <div class="form-group">
+            <label for="tutor-name">Tutor Name</label>
+            <input type="text" id="tutor-name" class="form-control" placeholder="e.g., Math Tutor" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="tutor-subject">Subject</label>
+            <select id="tutor-subject" class="form-control" required>
+              <option value="">Select a subject</option>
+              <option value="mathematics">Mathematics</option>
+              <option value="science">Science</option>
+              <option value="english">English</option>
+              <option value="history">History</option>
+              <option value="computer_science">Computer Science</option>
+              <option value="physics">Physics</option>
+              <option value="chemistry">Chemistry</option>
+              <option value="biology">Biology</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
 
-    form.addEventListener('submit', async (ev) => {
-      ev.preventDefault();
-      const value = input.value.trim();
-      if (!value) return;
-      appendMessage(value, 'user');
-      input.value = '';
-      appendMessage('...', 'assistant');
-      try {
-        const res = await fetch('/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: value }) });
-        const data = await res.json();
-        // replace last assistant placeholder
-        const last = chatEl.querySelector('.msg.assistant:last-child');
-        if (last) last.textContent = data.reply || '(no reply)';
-      } catch (err) {
-        const last = chatEl.querySelector('.msg.assistant:last-child');
-        if (last) last.textContent = 'Error: ' + (err && err.message ? err.message : 'Network error');
-      }
-    });
-  </script>
+          <div class="form-group" id="custom-subject-group" style="display: none;">
+            <label for="custom-subject">Custom Subject</label>
+            <input type="text" id="custom-subject" class="form-control" placeholder="Enter subject name">
+          </div>
+
+          <div class="form-group">
+            <label for="grade-level">Grade Level</label>
+            <select id="grade-level" class="form-control" required>
+              <option value="elementary">Elementary School</option>
+              <option value="middle">Middle School</option>
+              <option value="high_school" selected>High School</option>
+              <option value="college">College</option>
+              <option value="university">University</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="topic">Topic (Optional)</label>
+            <input type="text" id="topic" class="form-control" placeholder="e.g., Algebra, World War II, etc.">
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn-secondary" id="cancel-tutor">Cancel</button>
+            <button type="submit" class="btn-primary">Create Tutor</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal" id="settings-modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Settings</h2>
+        <button class="close-modal" id="close-settings">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="settings-section">
+          <h3>API Configuration</h3>
+          <div class="form-group">
+            <label for="api-key">Henotace API Key</label>
+            <div class="input-with-icon">
+              <input 
+                type="password" 
+                id="api-key" 
+                class="form-control"
+                placeholder="Enter your API key"
+                value=""
+              >
+              <button type="button" class="btn-icon" id="toggle-api-key">
+                <i class="fas fa-eye"></i>
+              </button>
+            </div>
+            <p class="help-text">Your API key is stored locally in your browser.</p>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <h3>Appearance</h3>
+          <div class="form-group">
+            <label>Theme</label>
+            <div class="theme-options">
+              <button class="theme-option active" data-theme="light">
+                <i class="fas fa-sun"></i> Light
+              </button>
+              <button class="theme-option" data-theme="dark">
+                <i class="fas fa-moon"></i> Dark
+              </button>
+              <button class="theme-option" data-theme="system">
+                <i class="fas fa-desktop"></i> System
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-actions">
+          <button class="btn-primary" id="save-settings">Save Settings</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Toast Notification -->
+  <div id="toast" class="toast"></div>
+  
+  <script src="app.js"></script>
 </body>
 </html>
