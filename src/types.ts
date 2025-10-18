@@ -187,6 +187,27 @@ export interface StorageConnector {
 }
 
 /**
+ * Log levels for SDK logging
+ */
+export enum LogLevel {
+  DEBUG = 0,
+  INFO = 1,
+  WARN = 2,
+  ERROR = 3,
+  NONE = 4
+}
+
+/**
+ * Logger interface for custom logging implementations
+ */
+export interface Logger {
+  debug(message: string, ...args: any[]): void;
+  info(message: string, ...args: any[]): void;
+  warn(message: string, ...args: any[]): void;
+  error(message: string, ...args: any[]): void;
+}
+
+/**
  * SDK config
  */
 export interface SDKConfig {
@@ -200,6 +221,12 @@ export interface SDKConfig {
   defaultPreset?: string; // falls back to 'tutor_default'
   defaultUserProfile?: Record<string, any>;
   defaultMetadata?: Record<string, any>;
+  // Logging configuration
+  logging?: {
+    enabled?: boolean;
+    level?: LogLevel;
+    logger?: Logger;
+  };
 }
 
 export interface TutorInit {

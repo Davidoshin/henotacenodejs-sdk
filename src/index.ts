@@ -10,8 +10,11 @@ import {
   StorageConnector,
   SessionChat,
   SDKConfig,
-  TutorInit
+  TutorInit,
+  LogLevel,
+  Logger
 } from './types';
+import { createLogger, ConsoleLogger } from './logger';
 
 export type HenotaceConfig = SDKConfig;
 
@@ -19,6 +22,7 @@ export class HenotaceAI {
   private client: AxiosInstance;
   private config: HenotaceConfig;
   private storage: StorageConnector | null;
+  private logger: Logger;
 
   constructor(config: HenotaceConfig) {
     this.config = {
@@ -27,6 +31,20 @@ export class HenotaceAI {
       retries: 3,
       ...config
     };
+
+    // Initialize logger
+    const loggingConfig = this.config.logging || {};
+    const logLevel = loggingConfig.level ?? LogLevel.INFO;
+    const logEnabled = loggingConfig.enabled ?? true;
+    this.logger = loggingConfig.logger || createLogger(logLevel, logEnabled);
+
+    this.logger.info('Initializing Henotace AI SDK', {
+      baseUrl: this.config.baseUrl,
+      timeout: this.config.timeout,
+      retries: this.config.retries,
+      logLevel: LogLevel[logLevel],
+      logEnabled
+    });
 
     this.client = axios.create({
       baseURL: this.config.baseUrl,
@@ -50,6 +68,14 @@ export class HenotaceAI {
     // Robust network error detection across different error shapes
     const errMessage = String(error?.message || error || '');
     const respDataString = error?.response && error.response.data ? JSON.stringify(error.response.data) : '';
+    
+    this.logger.error('SDK Error occurred', {
+      message: errMessage,
+      code: error?.code,
+      status: error?.response?.status,
+      responseData: error?.response?.data
+    });
+
     if (error?.code === 'NETWORK_ERROR' || errMessage.includes('Network Error') || respDataString.includes('Network Error')) {
       const msg = error?.message || 'Network Error';
       throw new Error(`Network Error: ${msg}`);
@@ -71,11 +97,15 @@ export class HenotaceAI {
     // Request interceptor
     this.client.interceptors.request.use(
       (config) => {
-        console.log(`[Henotace SDK] ${config.method?.toUpperCase()} ${config.url}`);
+        this.logger.debug('HTTP Request', {
+          method: config.method?.toUpperCase(),
+          url: config.url,
+          headers: config.headers
+        });
         return config;
       },
       (error) => {
-        console.error('[Henotace SDK] Request error:', error);
+        this.logger.error('Request interceptor error', error);
         return Promise.reject(error);
       }
     );
@@ -83,7 +113,11 @@ export class HenotaceAI {
     // Response interceptor
     this.client.interceptors.response.use(
       (response) => {
-        console.log(`[Henotace SDK] Response: ${response.status} ${response.statusText}`);
+        this.logger.debug('HTTP Response', {
+          status: response.status,
+          statusText: response.statusText,
+          url: response.config.url
+        });
         return response;
       },
       async (error) => {
@@ -91,26 +125,35 @@ export class HenotaceAI {
         
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
+          this.logger.warn('Authentication failed - invalid API key');
           throw new Error('Invalid API key. Please check your credentials.');
         }
 
         if (error.response?.status === 429) {
           // Rate limit exceeded - don't retry immediately
           const retryAfter = error.response.headers['retry-after'] || 60;
-          console.log(`[Henotace SDK] Rate limited. Retrying after ${retryAfter} seconds`);
+          this.logger.warn('Rate limit exceeded', { retryAfter });
           await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
           return this.client(originalRequest);
         }
 
         if (error.response?.status >= 500 && originalRequest._retryCount < this.config.retries!) {
           originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
-          console.log(`[Henotace SDK] Retrying request (${originalRequest._retryCount}/${this.config.retries})`);
+          this.logger.warn('Server error - retrying request', {
+            attempt: originalRequest._retryCount,
+            maxRetries: this.config.retries,
+            status: error.response.status
+          });
           
           await new Promise(resolve => setTimeout(resolve, 1000 * originalRequest._retryCount));
           return this.client(originalRequest);
         }
 
-        console.error('[Henotace SDK] Response error:', error.response?.data || error.message);
+        this.logger.error('Response error', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        });
         return Promise.reject(this.handleError(error));
       }
     );
@@ -121,10 +164,13 @@ export class HenotaceAI {
    * Check API status - raw response
    */
   async getStatus(): Promise<ApiResponse<{ status: string; message: string; timestamp: string }>> {
+    this.logger.debug('Checking API status');
     try {
       const response = await this.client.get('/api/external/status/');
+      this.logger.info('API status check successful', response.data);
       return response.data;
     } catch (error: any) {
+      this.logger.error('API status check failed', error);
       // If this looks like a plain network error, throw a matching message
       if (error && (String(error.message || '').includes('Network Error') || error.code === 'NETWORK_ERROR')) {
         throw new Error(`Network Error: ${error.message || 'Network Error'}`);
@@ -149,6 +195,14 @@ export class HenotaceAI {
 
   // unified chat completion using tutor prompts from views_tutor.py
   private async completeChat(payload: { history: { role: 'user' | 'assistant'; content: string }[]; input: string; preset?: string; subject?: string; topic?: string }): Promise<{ ai_response: string }> {
+    this.logger.debug('Starting chat completion', {
+      inputLength: payload.input.length,
+      historyLength: payload.history.length,
+      subject: payload.subject,
+      topic: payload.topic,
+      preset: payload.preset
+    });
+
     try {
       // Convert history to the format expected by the tutor prompt endpoint
       const chatHistory = payload.history.map(msg => ({
@@ -164,8 +218,22 @@ export class HenotaceAI {
         preset: payload.preset || 'tutor_default'
       });
       const data = response.data;
-      return { ai_response: data?.data?.ai_response || '' };
+      const aiResponse = data?.data?.ai_response || '';
+      
+      this.logger.debug('Chat completion successful', {
+        responseLength: aiResponse.length,
+        subject: payload.subject,
+        topic: payload.topic
+      });
+
+      return { ai_response: aiResponse };
     } catch (error: any) {
+      this.logger.error('Chat completion failed', {
+        input: payload.input,
+        subject: payload.subject,
+        topic: payload.topic,
+        error: error.message
+      });
       this.handleError(error);
     }
   }
@@ -198,6 +266,13 @@ export class HenotaceAI {
   getConfig(): HenotaceConfig {
     return { ...this.config };
   }
+
+  /**
+   * Get the logger instance
+   */
+  getLogger(): Logger {
+    return this.logger;
+  }
 }
 
 /**
@@ -213,6 +288,7 @@ export class Tutor {
   private metadata: Record<string, any> | null = null;
   private subject: string = 'general';
   private topic: string = 'general';
+  private logger: Logger;
   // Checkpoint compression settings
   private compression: { maxTurns: number; maxSummaryChars: number; checkpointEvery: number } = {
     maxTurns: 12,            // keep last N turns verbatim
@@ -227,6 +303,14 @@ export class Tutor {
     this.tutorId = tutorId;
     this.subject = subject || 'general';
     this.topic = topic || 'general';
+    this.logger = sdk.getLogger();
+    
+    this.logger.debug('Tutor instance created', {
+      studentId: this.studentId,
+      tutorId: this.tutorId,
+      subject: this.subject,
+      topic: this.topic
+    });
   }
 
   setContext(context: string | string[]): void {
@@ -343,6 +427,14 @@ export class Tutor {
   }
 
   async send(message: string, opts?: { context?: string | string[]; preset?: string }): Promise<string> {
+    this.logger.debug('Tutor send message', {
+      studentId: this.studentId,
+      tutorId: this.tutorId,
+      messageLength: message.length,
+      hasContext: !!opts?.context,
+      preset: opts?.preset
+    });
+
     // Build history from storage and use unified completion endpoint
     let history: { role: 'user' | 'assistant'; content: string }[] = [];
     const storage: StorageConnector | null = (this.sdk as any)['storage'] || null;
@@ -351,6 +443,7 @@ export class Tutor {
       await this.autoCompressIfNeeded(storage);
       const chats = await storage.listChats(this.studentId, this.tutorId);
       history = chats.map(c => ({ role: c.isReply ? 'assistant' : 'user', content: c.message }));
+      this.logger.debug('Loaded chat history', { historyLength: history.length });
     }
     // RAG-style context injection
     const ephemeral = opts?.context ? (Array.isArray(opts.context) ? opts.context : [opts.context]) : [];
@@ -359,6 +452,7 @@ export class Tutor {
       const clipped = mergedContext.slice(0, 5); // simple budget: top 5 snippets
       const contextBlock = ['[CONTEXT]', ...clipped.map(sn => (sn || '').toString())].join('\n');
       history.push({ role: 'assistant', content: contextBlock });
+      this.logger.debug('Added context to history', { contextSnippets: clipped.length });
     }
     // Persona + user profile + metadata injection as context header
     // Auto-apply SDK defaults when tutor-specific values not set
@@ -373,6 +467,11 @@ export class Tutor {
     if (metadata) headerParts.push(`[META] ${JSON.stringify(metadata).slice(0, 1000)}`);
     if (headerParts.length) {
       history.push({ role: 'assistant', content: headerParts.join('\n') });
+      this.logger.debug('Added persona/profile/metadata to history', { 
+        hasPersona: !!persona,
+        hasUserProfile: !!userProfile,
+        hasMetadata: !!metadata
+      });
     }
 
     const completion = await (this.sdk as any).completeChat({ 
@@ -383,10 +482,20 @@ export class Tutor {
       topic: this.topic
     });
     const ai = completion?.ai_response || '';
+    
+    this.logger.info('Tutor response generated', {
+      studentId: this.studentId,
+      tutorId: this.tutorId,
+      responseLength: ai.length,
+      subject: this.subject,
+      topic: this.topic
+    });
+
     if (storage) {
       const now = Date.now();
       await storage.appendChat(this.studentId, this.tutorId, { message, isReply: false, timestamp: now } as SessionChat);
       if (ai) await storage.appendChat(this.studentId, this.tutorId, { message: ai, isReply: true, timestamp: now + 1 } as SessionChat);
+      this.logger.debug('Chat history updated in storage');
     }
     return ai;
   }
@@ -406,15 +515,27 @@ export class Tutor {
  * Factory to create a Tutor, initialize storage records, and create a backend session
  */
 export async function createTutor(sdk: HenotaceAI, init: TutorInit): Promise<Tutor> {
+  const logger = sdk.getLogger();
   const studentId = init.studentId;
   const tutorId = init.tutorId || `tutor_${Date.now().toString(36)}`;
   const tutorName = init.tutorName || tutorId;
+
+  logger.info('Creating tutor', {
+    studentId,
+    tutorId,
+    tutorName,
+    subject: init.subject?.name,
+    topic: init.subject?.topic,
+    gradeLevel: init.grade_level,
+    language: init.language
+  });
 
   // Ensure storage entries
   if ((sdk as any)['storage']) {
     const storage: StorageConnector = (sdk as any)['storage'];
     await storage.upsertStudent({ id: studentId, tutors: [] } as any);
     await storage.upsertTutor(studentId, { id: tutorId, name: tutorName, subject: init.subject, chats: [] } as any);
+    logger.debug('Storage entries created/updated');
   }
 
   // No backend session needed; we rely on storage-managed history + chat/completion
@@ -426,6 +547,7 @@ export async function createTutor(sdk: HenotaceAI, init: TutorInit): Promise<Tut
     const existing = tutors.find(x => x.id === tutorId);
     if (existing?.context?.length) {
       t.setContext(existing.context);
+      logger.debug('Loaded existing context from storage', { contextLength: existing.context.length });
     }
   }
   if (init.language || init.grade_level || init.subject?.topic) {
@@ -434,8 +556,13 @@ export async function createTutor(sdk: HenotaceAI, init: TutorInit): Promise<Tut
     if (init.language) meta.push(`Language: ${init.language}`);
     if (init.grade_level) meta.push(`Grade Level: ${init.grade_level}`);
     if (init.subject?.topic) meta.push(`Topic: ${init.subject.topic}`);
-    if (meta.length) t.setContext(meta);
+    if (meta.length) {
+      t.setContext(meta);
+      logger.debug('Set initial context from tutor metadata', { metaLength: meta.length });
+    }
   }
+  
+  logger.info('Tutor created successfully', { studentId, tutorId });
   return t;
 }
 
@@ -449,6 +576,12 @@ export async function createTutors(sdk: HenotaceAI, inits: TutorInit[]): Promise
 
 // Export types
 export * from './types';
+
+// Export connectors
+export { default as InMemoryConnector } from './connectors/inmemory';
+
+// Export logger utilities
+export { ConsoleLogger, NoOpLogger, createLogger } from './logger';
 
 // Default export
 export default HenotaceAI;

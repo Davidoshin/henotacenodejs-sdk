@@ -38,7 +38,7 @@ A fully functional web-based demo is included under `examples/simple-ui/`. This 
 
 ### Quick Start
 
-1. **Get your API key** from [djtconcept.ng/dashboard](https://djtconcept.ng/dashboard)
+1. **Get your API key** from [henotaceai.ng/developer/dashboard](https://www.henotaceai.ng/developer/dashboard)
 
 2. **Start the demo:**
    ```bash
@@ -80,8 +80,7 @@ For detailed documentation, see [examples/simple-ui/README.md](examples/simple-u
 Example (Node/TypeScript):
 
 ```ts
-import { HenotaceAI, createTutor } from '@henotace/ai-sdk';
-import InMemoryConnector from './src/connectors/inmemory';
+import { HenotaceAI, createTutor, InMemoryConnector } from '@henotace/ai-sdk';
 
 const sdk = new HenotaceAI({ apiKey: process.env.HENOTACE_API_KEY!, storage: new InMemoryConnector() });
 const tutor = await createTutor(sdk, { studentId: 'stu1', tutorId: 't1', tutorName: 'Math Tutor', subject: { id: 'math', name: 'Mathematics', topic: 'algebra' } });

@@ -188,7 +188,7 @@ DEBUG=henotace:* HENOTACE_API_KEY=your_key npm start
 ### Using the SDK Programmatically
 ```javascript
 import { HenotaceAI, createTutor } from '@henotace/ai-sdk';
-import InMemoryConnector from './src/connectors/inmemory';
+import { InMemoryConnector } from '@henotace/ai-sdk';
 
 const sdk = new HenotaceAI({ 
   apiKey: 'your_api_key', 

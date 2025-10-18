@@ -9,8 +9,7 @@
  * Usage: node examples/basic-usage.js <your_api_key>
  */
 
-const { HenotaceAI, createTutor } = require('../dist/index.js');
-const InMemoryConnector = require('../dist/connectors/inmemory.js');
+const { HenotaceAI, createTutor, LogLevel, InMemoryConnector } = require('../dist/index.js');
 
 async function main() {
   // Get API key from command line arguments
@@ -32,11 +31,15 @@ async function main() {
   console.log('');
 
   try {
-    // Initialize the SDK
+    // Initialize the SDK with logging enabled
     console.log('🔧 Initializing Henotace AI SDK...');
     const sdk = new HenotaceAI({
       apiKey: apiKey,
-      storage: new InMemoryConnector()
+      storage: new InMemoryConnector(),
+      logging: {
+        enabled: true,
+        level: LogLevel.INFO // Enable info-level logging
+      }
     });
 
     // Check API status

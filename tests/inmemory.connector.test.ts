@@ -1,4 +1,4 @@
-import InMemoryConnector from '../src/connectors/inmemory';
+import { InMemoryConnector } from '../src/index';
 
 describe('InMemoryConnector', () => {
   test('should CRUD students, tutors, and chats', async () => {

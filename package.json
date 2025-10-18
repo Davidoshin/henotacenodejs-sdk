@@ -1,6 +1,6 @@
 {
   "name": "@henotace/ai-sdk",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Official Node.js SDK for Henotace AI API - AI-powered educational platform",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -42,7 +42,7 @@
     "LICENSE"
   ],
   "dependencies": {
-    "@henotace/ai-sdk": "^1.0.0",
+    "@henotace/ai-sdk": "^1.0.2",
     "axios": "^1.12.2",
     "cors": "^2.8.5",
     "express": "^4.21.2",

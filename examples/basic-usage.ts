@@ -2,15 +2,18 @@
  * Basic usage example for Henotace AI SDK
  */
 
-import { HenotaceAI, createTutor } from '../src/index';
-import InMemoryConnector from '../src/connectors/inmemory';
+import { HenotaceAI, createTutor, LogLevel, InMemoryConnector } from '../src/index';
 
 async function basicUsageExample() {
-  // Initialize the SDK with storage
+  // Initialize the SDK with storage and logging enabled
   const sdk = new HenotaceAI({
     apiKey: 'your-api-key-here',
     baseUrl: 'https://api.djtconcept.ng', // or 'http://localhost:8000' for development
-    storage: new InMemoryConnector()
+    storage: new InMemoryConnector(),
+    logging: {
+      enabled: true,
+      level: LogLevel.DEBUG // Enable detailed logging
+    }
   });
 
   try {
