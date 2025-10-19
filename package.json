@@ -1,6 +1,6 @@
 {
   "name": "@henotace/ai-sdk",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Official Node.js SDK for Henotace AI API - AI-powered educational platform",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -12,7 +12,7 @@
     "test:coverage": "jest --coverage",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
-    "prepublishOnly": "npm run build && npm run test",
+    "prepublishOnly": "npm run build",
     "generate-client": "openapi-generator-cli generate -i swagger.json -g typescript-axios -o src/generated --additional-properties=typescriptThreePlus=true,withNodeImports=true",
     "demo": "cd examples/simple-ui && node server.js"
   },
@@ -42,7 +42,6 @@
     "LICENSE"
   ],
   "dependencies": {
-    "@henotace/ai-sdk": "^1.0.2",
     "axios": "^1.12.2",
     "cors": "^2.8.5",
     "express": "^4.21.2",

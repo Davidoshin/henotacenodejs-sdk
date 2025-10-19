@@ -12,7 +12,10 @@ import {
   SDKConfig,
   TutorInit,
   LogLevel,
-  Logger
+  Logger,
+  ClassworkGenerationRequest,
+  ClassworkGenerationResponse,
+  ClassworkData
 } from './types';
 import { createLogger, ConsoleLogger } from './logger';
 
@@ -273,6 +276,184 @@ export class HenotaceAI {
   getLogger(): Logger {
     return this.logger;
   }
+
+  /**
+   * Generate context-aware classwork based on chat conversation
+   */
+  async generateClasswork(request: ClassworkGenerationRequest): Promise<ClassworkGenerationResponse> {
+    this.logger.info('Generating classwork', {
+      subject: request.subject,
+      topic: request.topic,
+      classLevel: request.class_level,
+      questionCount: request.question_count,
+      difficulty: request.difficulty,
+      hasContext: !!request.context,
+      hasChatHistory: !!request.chat_history?.length
+    });
+
+    try {
+      // Use the enhanced chat completion endpoint for classwork generation
+      const response = await this.client.post('/api/external/working/chat/completion/', {
+        history: request.chat_history || [],
+        input: `Generate ${request.question_count || 5} practice questions for ${request.subject} on ${request.topic}`,
+        subject: request.subject,
+        topic: request.topic,
+        generate_classwork: true,
+        question_count: request.question_count || 5,
+        difficulty: request.difficulty || 'medium',
+        preset: 'tutor_default'
+      }, {
+        headers: {
+          'X-API-Key': this.config.apiKey,
+          'Content-Type': 'application/json'
+        },
+        timeout: this.config.timeout
+      });
+
+      this.logger.info('Classwork generated successfully', {
+        success: response.data.success,
+        questionCount: response.data.data?.classwork?.questions?.length || 0
+      });
+
+      return response.data;
+    } catch (error: any) {
+      this.logger.error('Classwork generation failed', {
+        error: error.message,
+        subject: request.subject,
+        topic: request.topic
+      });
+
+      if (error.response?.data) {
+        return error.response.data;
+      }
+
+      return {
+        success: false,
+        message: `Classwork generation failed: ${error.message}`,
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
+  /**
+   * Save classwork to the database
+   */
+  async saveClasswork(classworkData: ClassworkData): Promise<ApiResponse<{ classwork_id: string; session_id: string }>> {
+    this.logger.info('Saving classwork', {
+      studentId: classworkData.student_id,
+      subject: classworkData.subject,
+      topic: classworkData.topic,
+      questionCount: classworkData.questions.length,
+      totalPoints: classworkData.total_points
+    });
+
+    try {
+      // Prepare the request payload
+      const payload = {
+        student_id: classworkData.student_id,
+        subject: classworkData.subject,
+        topic: classworkData.topic,
+        class_level: classworkData.class_level,
+        questions: classworkData.questions,
+        total_points: classworkData.total_points,
+        context: classworkData.context || '',
+        chat_history: classworkData.chat_history || []
+      };
+
+      this.logger.debug('Classwork save payload', payload);
+
+      // Call the save classwork endpoint
+      const response = await this.client.post('/api/external/ai-tutor/save-classwork-questions/', payload, {
+        headers: {
+          'X-API-Key': this.config.apiKey,
+          'Content-Type': 'application/json'
+        },
+        timeout: this.config.timeout
+      });
+
+      this.logger.info('Classwork saved successfully', {
+        success: response.data.success,
+        classworkId: response.data.data?.classwork_id
+      });
+
+      return response.data;
+    } catch (error: any) {
+      this.logger.error('Classwork save failed', {
+        error: error.message,
+        studentId: classworkData.student_id,
+        subject: classworkData.subject
+      });
+
+      if (error.response?.data) {
+        return error.response.data;
+      }
+
+      return {
+        success: false,
+        message: `Classwork save failed: ${error.message}`,
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
+  /**
+   * Generate and save classwork in one operation
+   */
+  async generateAndSaveClasswork(request: ClassworkGenerationRequest & { student_id: string }): Promise<ClassworkGenerationResponse> {
+    this.logger.info('Generating and saving classwork', {
+      studentId: request.student_id,
+      subject: request.subject,
+      topic: request.topic
+    });
+
+    try {
+      // First generate the classwork
+      const generationResult = await this.generateClasswork(request);
+      
+      if (!generationResult.success || !generationResult.data?.classwork) {
+        return generationResult;
+      }
+
+      // Then save it to the database
+      const classworkData: ClassworkData = {
+        ...generationResult.data.classwork,
+        student_id: request.student_id
+      };
+
+      const saveResult = await this.saveClasswork(classworkData);
+      
+      if (!saveResult.success) {
+        return {
+          success: false,
+          message: `Classwork generated but save failed: ${saveResult.message}`,
+          timestamp: new Date().toISOString()
+        };
+      }
+
+      // Return the combined result
+      return {
+        success: true,
+        data: {
+          classwork: classworkData,
+          session_id: saveResult.data?.session_id
+        },
+        message: 'Classwork generated and saved successfully',
+        timestamp: new Date().toISOString()
+      };
+    } catch (error: any) {
+      this.logger.error('Generate and save classwork failed', {
+        error: error.message,
+        studentId: request.student_id,
+        subject: request.subject
+      });
+
+      return {
+        success: false,
+        message: `Generate and save classwork failed: ${error.message}`,
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
 }
 
 /**
@@ -508,6 +689,67 @@ export class Tutor {
 
   get ids() {
     return { studentId: this.studentId, tutorId: this.tutorId };
+  }
+
+  /**
+   * Generate classwork based on current chat conversation
+   */
+  async generateClassworkFromChat(request: {
+    subject: string;
+    topic: string;
+    class_level?: string;
+    question_count?: number;
+    difficulty?: 'easy' | 'medium' | 'hard';
+  }): Promise<ClassworkGenerationResponse> {
+    this.logger.info('Generating classwork from chat history', {
+      studentId: this.studentId,
+      tutorId: this.tutorId,
+      subject: request.subject,
+      topic: request.topic
+    });
+
+    try {
+      // Get chat history from storage
+      const storage: StorageConnector | null = (this.sdk as any)['storage'] || null;
+      let chatHistory: any[] = [];
+      
+      if (storage) {
+        const chats = await storage.listChats(this.studentId, this.tutorId);
+        chatHistory = chats.map(c => ({
+          session_id: this.tutorId,
+          user_message: c.isReply ? '' : c.message,
+          ai_response: c.isReply ? c.message : '',
+          timestamp: new Date(c.timestamp || Date.now()).toISOString()
+        }));
+      }
+
+      // Generate classwork using the main SDK method
+      const result = await this.sdk.generateAndSaveClasswork({
+        ...request,
+        student_id: this.studentId,
+        chat_history: chatHistory,
+        context: `Generated from tutoring session with ${this.tutorId}`
+      });
+
+      this.logger.info('Classwork generated from chat', {
+        success: result.success,
+        questionCount: result.data?.classwork?.questions?.length || 0
+      });
+
+      return result;
+    } catch (error: any) {
+      this.logger.error('Failed to generate classwork from chat', {
+        error: error.message,
+        studentId: this.studentId,
+        tutorId: this.tutorId
+      });
+
+      return {
+        success: false,
+        message: `Failed to generate classwork from chat: ${error.message}`,
+        timestamp: new Date().toISOString()
+      };
+    }
   }
 }
 

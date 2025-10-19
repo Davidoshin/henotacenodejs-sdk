@@ -41,6 +41,37 @@ export interface AssessmentData {
   answers: Answer[];
 }
 
+export interface ClassworkData {
+  student_id: string;
+  subject: string;
+  topic: string;
+  class_level: string;
+  questions: Question[];
+  total_points: number;
+  context?: string;
+  chat_history?: ChatMessage[];
+}
+
+export interface ClassworkGenerationRequest {
+  subject: string;
+  topic: string;
+  class_level?: string;
+  question_count?: number;
+  difficulty?: 'easy' | 'medium' | 'hard';
+  context?: string;
+  chat_history?: ChatMessage[];
+}
+
+export interface ClassworkGenerationResponse {
+  success: boolean;
+  data?: {
+    classwork: ClassworkData;
+    session_id?: string;
+  };
+  message?: string;
+  timestamp: string;
+}
+
 export interface Question {
   id: number;
   question: string;
