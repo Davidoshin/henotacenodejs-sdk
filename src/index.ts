@@ -194,10 +194,52 @@ export class HenotaceAI {
     }
   }
 
+  /**
+   * Enhanced chat completion with customization parameters
+   */
+  async chatCompletion(params: {
+    history: { role: 'user' | 'assistant'; content: string }[];
+    input: string;
+    subject?: string;
+    topic?: string;
+    preset?: string;
+    author_name?: string;
+    language?: string;
+    personality?: string;
+    teaching_style?: string;
+    branding?: Record<string, any>;
+  }): Promise<{ ai_response: string }> {
+    this.logger.debug('Enhanced chat completion', {
+      inputLength: params.input.length,
+      historyLength: params.history.length,
+      subject: params.subject,
+      topic: params.topic,
+      author_name: params.author_name,
+      language: params.language,
+      personality: params.personality,
+      teaching_style: params.teaching_style,
+      hasBranding: !!params.branding
+    });
+
+    return this.completeChat(params);
+  }
+
   // Removed: session creation and session-bound chat are no longer part of the SDK
 
   // unified chat completion using tutor prompts from views_tutor.py
-  private async completeChat(payload: { history: { role: 'user' | 'assistant'; content: string }[]; input: string; preset?: string; subject?: string; topic?: string }): Promise<{ ai_response: string }> {
+  private async completeChat(payload: { 
+    history: { role: 'user' | 'assistant'; content: string }[]; 
+    input: string; 
+    preset?: string; 
+    subject?: string; 
+    topic?: string;
+    // New customization parameters
+    author_name?: string;
+    language?: string;
+    personality?: string;
+    teaching_style?: string;
+    branding?: Record<string, any>;
+  }): Promise<{ ai_response: string }> {
     this.logger.debug('Starting chat completion', {
       inputLength: payload.input.length,
       historyLength: payload.history.length,
@@ -218,7 +260,13 @@ export class HenotaceAI {
         input: payload.input,
         subject: payload.subject || 'general',
         topic: payload.topic || 'general',
-        preset: payload.preset || 'tutor_default'
+        preset: payload.preset || 'tutor_default',
+        // New customization parameters
+        author_name: payload.author_name,
+        language: payload.language || 'en',
+        personality: payload.personality || 'friendly',
+        teaching_style: payload.teaching_style || 'socratic',
+        branding: payload.branding || {}
       });
       const data = response.data;
       const aiResponse = data?.data?.ai_response || '';
@@ -607,7 +655,15 @@ export class Tutor {
     await storage.replaceChats(this.studentId, this.tutorId, recent);
   }
 
-  async send(message: string, opts?: { context?: string | string[]; preset?: string }): Promise<string> {
+  async send(message: string, opts?: { 
+    context?: string | string[]; 
+    preset?: string;
+    author_name?: string;
+    language?: string;
+    personality?: string;
+    teaching_style?: string;
+    branding?: Record<string, any>;
+  }): Promise<string> {
     this.logger.debug('Tutor send message', {
       studentId: this.studentId,
       tutorId: this.tutorId,
@@ -660,7 +716,13 @@ export class Tutor {
       input: message, 
       preset: opts?.preset || sdkConfig.defaultPreset || 'tutor_default',
       subject: this.subject,
-      topic: this.topic
+      topic: this.topic,
+      // Pass through customization parameters
+      author_name: opts?.author_name,
+      language: opts?.language,
+      personality: opts?.personality,
+      teaching_style: opts?.teaching_style,
+      branding: opts?.branding
     });
     const ai = completion?.ai_response || '';
     

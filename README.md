@@ -10,6 +10,11 @@ This repository contains a TypeScript SDK (`src/index.ts`) that wraps the Henota
 - **💾 Classwork Management**: Save and manage generated classwork in the database
 - **🔄 Batch Operations**: Generate multiple classworks for different subjects
 - **📚 Context-Aware**: Uses chat history to create relevant questions
+- **🎨 Enhanced Customization**: Personalize AI tutors with author names, languages, personalities, and teaching styles
+- **🎭 Branding Support**: Custom branding and white-label options for enterprise users
+- **🌍 Multi-language**: Support for multiple languages in AI responses
+- **👤 Personality Types**: Choose from friendly, professional, encouraging, or direct personalities
+- **📖 Teaching Styles**: Socratic, Direct Instruction, or Problem-Based learning approaches
 
 ## What this repo provides
 
@@ -96,6 +101,65 @@ const sdk = new HenotaceAI({ apiKey: process.env.HENOTACE_API_KEY!, storage: new
 const tutor = await createTutor(sdk, { studentId: 'stu1', tutorId: 't1', tutorName: 'Math Tutor', subject: { id: 'math', name: 'Mathematics', topic: 'algebra' } });
 const reply = await tutor.send('Solve x + 2 = 5');
 console.log('AI:', reply);
+```
+
+### Enhanced Customization Example:
+
+```ts
+import { HenotaceAI, InMemoryConnector } from '@henotace/ai-sdk';
+
+const sdk = new HenotaceAI({ 
+  apiKey: process.env.HENOTACE_API_KEY!, 
+  storage: new InMemoryConnector() 
+});
+
+// Enhanced chat completion with customization
+const response = await sdk.chatCompletion({
+  history: [
+    { role: 'user', content: 'What is photosynthesis?' },
+    { role: 'assistant', content: 'Photosynthesis is the process...' }
+  ],
+  input: 'Can you explain it in simpler terms?',
+  subject: 'biology',
+  topic: 'plant_biology',
+  author_name: 'Dr. Smith',
+  language: 'en',
+  personality: 'friendly',
+  teaching_style: 'socratic',
+  branding: {
+    name: 'Bio Tutor',
+    primaryColor: '#3B82F6',
+    secondaryColor: '#1E40AF'
+  }
+});
+
+console.log('AI Response:', response.ai_response);
+```
+
+### Tutor with Customization:
+
+```ts
+// Create a tutor with enhanced customization
+const tutor = await createTutor(sdk, { 
+  studentId: 'stu1', 
+  tutorId: 'bio-tutor', 
+  tutorName: 'Biology Expert',
+  subject: { id: 'biology', name: 'Biology', topic: 'cell_structure' }
+});
+
+// Send message with customization parameters
+const reply = await tutor.send('Explain cell division', {
+  author_name: 'Dr. Johnson',
+  language: 'en',
+  personality: 'encouraging',
+  teaching_style: 'direct',
+  branding: {
+    name: 'Cell Biology Tutor',
+    primaryColor: '#10B981'
+  }
+});
+
+console.log('Tutor Response:', reply);
 ```
 
 ### 🎯 NEW: Classwork Generation Example

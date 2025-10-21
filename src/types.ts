@@ -62,6 +62,27 @@ export interface ClassworkGenerationRequest {
   chat_history?: ChatMessage[];
 }
 
+export interface ChatCustomization {
+  author_name?: string;
+  language?: string;
+  personality?: string;
+  teaching_style?: string;
+  branding?: Record<string, any>;
+}
+
+export interface EnhancedChatCompletionRequest {
+  history: { role: 'user' | 'assistant'; content: string }[];
+  input: string;
+  subject?: string;
+  topic?: string;
+  preset?: string;
+  author_name?: string;
+  language?: string;
+  personality?: string;
+  teaching_style?: string;
+  branding?: Record<string, any>;
+}
+
 export interface ClassworkGenerationResponse {
   success: boolean;
   data?: {
