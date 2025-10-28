@@ -10,11 +10,14 @@ This repository contains a TypeScript SDK (`src/index.ts`) that wraps the Henota
 - **💾 Classwork Management**: Save and manage generated classwork in the database
 - **🔄 Batch Operations**: Generate multiple classworks for different subjects
 - **📚 Context-Aware**: Uses chat history to create relevant questions
-- **🎨 Enhanced Customization**: Personalize AI tutors with author names, languages, personalities, and teaching styles
+- **🎨 Advanced Personalization**: Comprehensive AI tutor personalization with learning pattern analysis
+- **🧠 Learning Analysis**: Automatic detection of learning levels, styles, and student patterns
 - **🎭 Branding Support**: Custom branding and white-label options for enterprise users
-- **🌍 Multi-language**: Support for multiple languages in AI responses
-- **👤 Personality Types**: Choose from friendly, professional, encouraging, or direct personalities
-- **📖 Teaching Styles**: Socratic, Direct Instruction, or Problem-Based learning approaches
+- **🌍 Multi-language**: Support for multiple languages including Nigerian languages (Yoruba, Hausa, Igbo, Pidgin)
+- **👤 Personality Types**: Choose from friendly, professional, encouraging, strict, or humorous personalities
+- **📖 Teaching Styles**: Socratic, Direct Instruction, Problem-Based, or Collaborative learning approaches
+- **🎯 Interest Integration**: Personalize learning based on student interests and preferences
+- **📊 Progress Tracking**: Automatic tracking of student strengths, struggles, and learning patterns
 
 ## What this repo provides
 
@@ -103,7 +106,7 @@ const reply = await tutor.send('Solve x + 2 = 5');
 console.log('AI:', reply);
 ```
 
-### Enhanced Customization Example:
+### Enhanced Personalization Example:
 
 ```ts
 import { HenotaceAI, InMemoryConnector } from '@henotace/ai-sdk';
@@ -113,30 +116,57 @@ const sdk = new HenotaceAI({
   storage: new InMemoryConnector() 
 });
 
-// Enhanced chat completion with customization
+// Advanced personalization with learning analysis
 const response = await sdk.chatCompletion({
   history: [
-    { role: 'user', content: 'What is photosynthesis?' },
-    { role: 'assistant', content: 'Photosynthesis is the process...' }
+    { role: 'user', content: 'I find algebra difficult' },
+    { role: 'assistant', content: 'Let me help you with algebra step by step...' },
+    { role: 'user', content: 'Can you show me examples?' }
   ],
-  input: 'Can you explain it in simpler terms?',
-  subject: 'biology',
-  topic: 'plant_biology',
-  author_name: 'Dr. Smith',
+  input: 'I still don\'t understand quadratic equations',
+  subject: 'mathematics',
+  topic: 'algebra',
+  author_name: 'Dr. Johnson',
   language: 'en',
-  personality: 'friendly',
-  teaching_style: 'socratic',
+  personality: 'encouraging',  // Supports: friendly, encouraging, strict, humorous, professional
+  teaching_style: 'socratic',  // Supports: socratic, direct, problem_based, collaborative
   branding: {
-    name: 'Bio Tutor',
-    primaryColor: '#3B82F6',
-    secondaryColor: '#1E40AF'
+    name: 'Math Master',
+    primaryColor: '#10B981',
+    secondaryColor: '#047857'
   }
 });
 
 console.log('AI Response:', response.ai_response);
 ```
 
-### Tutor with Customization:
+### Multi-Language Support Example:
+
+```ts
+// Nigerian Pidgin English
+const pidginResponse = await sdk.chatCompletion({
+  history: [],
+  input: 'Wetin be photosynthesis?',
+  subject: 'biology',
+  topic: 'plant_biology',
+  language: 'pidgin',  // Nigerian Pidgin English
+  personality: 'friendly',
+  teaching_style: 'direct'
+});
+
+// Yoruba Language
+const yorubaResponse = await sdk.chatCompletion({
+  history: [],
+  input: 'Kí ni photosynthesis?',
+  subject: 'biology',
+  topic: 'plant_biology',
+  language: 'yo-NG',  // Yoruba with Nigerian cultural context
+  personality: 'encouraging',
+  teaching_style: 'socratic'
+});
+```
+
+### Tutor with Advanced Personalization:
 
 ```ts
 // Create a tutor with enhanced customization
@@ -147,19 +177,54 @@ const tutor = await createTutor(sdk, {
   subject: { id: 'biology', name: 'Biology', topic: 'cell_structure' }
 });
 
-// Send message with customization parameters
+// Send message with full personalization parameters
 const reply = await tutor.send('Explain cell division', {
   author_name: 'Dr. Johnson',
   language: 'en',
   personality: 'encouraging',
   teaching_style: 'direct',
+  interests: ['sports', 'music', 'art'],  // Student interests for personalization
   branding: {
     name: 'Cell Biology Tutor',
-    primaryColor: '#10B981'
+    primaryColor: '#10B981',
+    secondaryColor: '#047857'
   }
 });
 
 console.log('Tutor Response:', reply);
+```
+
+### Complete Personalization Example:
+
+```ts
+// Example showing all personalization features
+const personalizedResponse = await sdk.chatCompletion({
+  history: [
+    { role: 'user', content: 'I love football and find math difficult' },
+    { role: 'assistant', content: 'I understand! Let me use football examples to explain math concepts...' },
+    { role: 'user', content: 'Can you show me how to calculate angles?' }
+  ],
+  input: 'I still don\'t understand trigonometry',
+  subject: 'mathematics',
+  topic: 'trigonometry',
+  author_name: 'Coach Math',
+  language: 'en',
+  personality: 'encouraging',  // Will be supportive and celebrate progress
+  teaching_style: 'problem_based',  // Will use real-world football scenarios
+  interests: ['football', 'sports', 'gaming'],  // Will use sports examples
+  branding: {
+    name: 'Sports Math Tutor',
+    primaryColor: '#FF6B35',
+    secondaryColor: '#F7931E'
+  }
+});
+
+// The AI will automatically:
+// 1. Detect the student struggles with math
+// 2. Use football/sports examples for trigonometry
+// 3. Apply encouraging personality
+// 4. Use problem-based teaching approach
+// 5. Reference previous conversation about angles
 ```
 
 ### 🎯 NEW: Classwork Generation Example
@@ -300,6 +365,91 @@ const classworkResponse = await client.completeChat({
 - 📖 **Complete Guide**: `DEVELOPER_INTEGRATION_GUIDE.md`
 - 🚀 **Quick Start**: `examples/quick-start-example.js`
 - 💡 **Examples**: `examples/` directory
+
+## 🎨 Advanced Personalization Features
+
+The Henotace AI SDK now includes comprehensive personalization capabilities that automatically analyze learning patterns and adapt to individual student needs.
+
+### 🧠 Learning Pattern Analysis
+
+The AI automatically analyzes conversation history to detect:
+- **Learning Level**: Beginner, Intermediate, or Advanced
+- **Learning Style**: Inquisitive, Example-driven, or Practice-oriented
+- **Student Struggles**: Areas where the student needs extra support
+- **Student Strengths**: Topics where the student excels
+- **Key Concepts**: Important topics discussed in the conversation
+- **Learning Patterns**: How the student prefers to learn
+
+### 🌍 Multi-Language Support
+
+Support for multiple languages including Nigerian languages:
+
+```ts
+// Supported languages
+const languages = [
+  'en',        // English (default)
+  'yo-NG',     // Yoruba with Nigerian cultural context
+  'ha-NG',     // Hausa with Nigerian cultural context  
+  'ig-NG',     // Igbo with Nigerian cultural context
+  'pidgin'     // Nigerian Pidgin English
+];
+
+// Example usage
+const response = await sdk.chatCompletion({
+  history: [],
+  input: 'Wetin be mathematics?',
+  subject: 'mathematics',
+  language: 'pidgin',  // Responds in Nigerian Pidgin
+  personality: 'friendly'
+});
+```
+
+### 👤 Personality Types
+
+Choose from different tutor personalities:
+
+- **`friendly`** (default): Approachable and supportive
+- **`encouraging`**: Warm, supportive, celebrates small wins
+- **`strict`**: Precise, direct, focused on accuracy
+- **`humorous`**: Uses appropriate humor to make learning engaging
+- **`professional`**: Formal, professional tone while being helpful
+
+### 📖 Teaching Styles
+
+Select the teaching approach that works best:
+
+- **`socratic`** (default): Asks thought-provoking questions to guide discovery
+- **`direct`**: Provides clear explanations and step-by-step instructions
+- **`problem_based`**: Focuses on problem-solving and practical applications
+- **`collaborative`**: Works together with the student, building on their ideas
+
+### 🎯 Interest Integration
+
+Personalize learning based on student interests:
+
+```ts
+// The backend automatically uses student interests for personalization
+// when provided in the conversation context
+const response = await sdk.chatCompletion({
+  history: [
+    { role: 'user', content: 'I love sports and music' },
+    { role: 'assistant', content: 'Great! Let me use sports examples...' }
+  ],
+  input: 'Explain physics concepts',
+  subject: 'physics',
+  topic: 'mechanics',
+  // AI will automatically use sports examples for physics concepts
+});
+```
+
+### 📊 Automatic Progress Tracking
+
+The AI automatically tracks and adapts to:
+- Areas where students struggle
+- Topics where students show strength
+- Learning preferences and patterns
+- Conversation context and continuity
+- Recent questions and focus areas
 
 ## 📚 API Reference
 

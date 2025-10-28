@@ -64,10 +64,11 @@ export interface ClassworkGenerationRequest {
 
 export interface ChatCustomization {
   author_name?: string;
-  language?: string;
-  personality?: string;
-  teaching_style?: string;
+  language?: 'en' | 'yo-NG' | 'ha-NG' | 'ig-NG' | 'pidgin';
+  personality?: 'friendly' | 'encouraging' | 'strict' | 'humorous' | 'professional';
+  teaching_style?: 'socratic' | 'direct' | 'problem_based' | 'collaborative';
   branding?: Record<string, any>;
+  interests?: string[];  // Student interests for personalization
 }
 
 export interface EnhancedChatCompletionRequest {
@@ -77,10 +78,11 @@ export interface EnhancedChatCompletionRequest {
   topic?: string;
   preset?: string;
   author_name?: string;
-  language?: string;
-  personality?: string;
-  teaching_style?: string;
+  language?: 'en' | 'yo-NG' | 'ha-NG' | 'ig-NG' | 'pidgin';
+  personality?: 'friendly' | 'encouraging' | 'strict' | 'humorous' | 'professional';
+  teaching_style?: 'socratic' | 'direct' | 'problem_based' | 'collaborative';
   branding?: Record<string, any>;
+  interests?: string[];  // Student interests for personalization
 }
 
 export interface ClassworkGenerationResponse {

@@ -204,10 +204,11 @@ export class HenotaceAI {
     topic?: string;
     preset?: string;
     author_name?: string;
-    language?: string;
-    personality?: string;
-    teaching_style?: string;
+    language?: 'en' | 'yo-NG' | 'ha-NG' | 'ig-NG' | 'pidgin';
+    personality?: 'friendly' | 'encouraging' | 'strict' | 'humorous' | 'professional';
+    teaching_style?: 'socratic' | 'direct' | 'problem_based' | 'collaborative';
     branding?: Record<string, any>;
+    interests?: string[];
   }): Promise<{ ai_response: string }> {
     this.logger.debug('Enhanced chat completion', {
       inputLength: params.input.length,
@@ -235,10 +236,11 @@ export class HenotaceAI {
     topic?: string;
     // New customization parameters
     author_name?: string;
-    language?: string;
-    personality?: string;
-    teaching_style?: string;
+    language?: 'en' | 'yo-NG' | 'ha-NG' | 'ig-NG' | 'pidgin';
+    personality?: 'friendly' | 'encouraging' | 'strict' | 'humorous' | 'professional';
+    teaching_style?: 'socratic' | 'direct' | 'problem_based' | 'collaborative';
     branding?: Record<string, any>;
+    interests?: string[];
   }): Promise<{ ai_response: string }> {
     this.logger.debug('Starting chat completion', {
       inputLength: payload.input.length,
@@ -266,7 +268,8 @@ export class HenotaceAI {
         language: payload.language || 'en',
         personality: payload.personality || 'friendly',
         teaching_style: payload.teaching_style || 'socratic',
-        branding: payload.branding || {}
+        branding: payload.branding || {},
+        interests: payload.interests || []
       });
       const data = response.data;
       const aiResponse = data?.data?.ai_response || '';
@@ -659,10 +662,11 @@ export class Tutor {
     context?: string | string[]; 
     preset?: string;
     author_name?: string;
-    language?: string;
-    personality?: string;
-    teaching_style?: string;
+    language?: 'en' | 'yo-NG' | 'ha-NG' | 'ig-NG' | 'pidgin';
+    personality?: 'friendly' | 'encouraging' | 'strict' | 'humorous' | 'professional';
+    teaching_style?: 'socratic' | 'direct' | 'problem_based' | 'collaborative';
     branding?: Record<string, any>;
+    interests?: string[];
   }): Promise<string> {
     this.logger.debug('Tutor send message', {
       studentId: this.studentId,
@@ -722,7 +726,8 @@ export class Tutor {
       language: opts?.language,
       personality: opts?.personality,
       teaching_style: opts?.teaching_style,
-      branding: opts?.branding
+      branding: opts?.branding,
+      interests: opts?.interests
     });
     const ai = completion?.ai_response || '';
     
